@@ -51,12 +51,6 @@
         <option value="pt">Português 🇧🇷</option>
       </select>
 
-      <!-- Botón Configurar API Key -->
-      <button onclick="toggleApiKeyModal()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
-        <i class="fa-solid fa-key text-yellow-400"></i>
-        <span data-i18n="apiKeyBtn">API Key</span>
-      </button>
-
       <!-- Botón Compartir App -->
       <button onclick="openShareModal()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
         <i class="fa-solid fa-share-nodes text-blue-400"></i>
@@ -197,30 +191,6 @@
 
   </main>
 
-  <!-- Modal Configurar API Key -->
-  <div id="apiKeyModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="glass-card bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl relative">
-      <button onclick="toggleApiKeyModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-
-      <div class="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto text-yellow-400 text-xl">
-        <i class="fa-solid fa-key"></i>
-      </div>
-
-      <div>
-        <h3 class="text-lg font-bold text-slate-100" data-i18n="apiModalTitle">Clave de Gemini API</h3>
-        <p class="text-xs text-slate-400 mt-1" data-i18n="apiModalSub">Ingresa tu llave de Google AI Studio para activar la IA</p>
-      </div>
-
-      <input type="password" id="apiKeyInput" placeholder="AQ... o AIzaSy..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500">
-
-      <button onclick="saveApiKey()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-xl shadow-lg transition" data-i18n="saveKeyBtn">
-        Guardar Clave
-      </button>
-    </div>
-  </div>
-
   <!-- Modal Compartir App -->
   <div id="shareModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="glass-card bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl relative">
@@ -242,14 +212,13 @@
     ¡Listo!
   </div>
 
-  <!-- JavaScript Multilenguaje & Gemini AI Logic -->
+  <!-- JavaScript Multilenguaje & Backend Proxy Logic -->
   <script>
     const TARGET_DOMAIN = "https://cardsync-ai.com";
 
     // Diccionario Multilenguaje
     const translations = {
       es: {
-        apiKeyBtn: "API Key",
         shareBtn: "Compartir",
         scanTitle: "Escanear con Gemini AI",
         createNewBtn: "Crear Nuevo",
@@ -272,13 +241,9 @@
         qrTitle: "Código QR del Contacto",
         qrSubtitle: "Escanea con la cámara de cualquier teléfono para guardar el contacto (MECARD)",
         vcardBtn: "Guardar en Agenda (.vcf)",
-        apiModalTitle: "Clave de Gemini API",
-        apiModalSub: "Ingresa tu llave de Google AI Studio para activar la IA",
-        saveKeyBtn: "Guardar Clave",
         shareAppSub: "Escanea para abrir la aplicación"
       },
       en: {
-        apiKeyBtn: "API Key",
         shareBtn: "Share",
         scanTitle: "Scan with Gemini AI",
         createNewBtn: "Create New",
@@ -301,13 +266,9 @@
         qrTitle: "Contact QR Code",
         qrSubtitle: "Scan with any smartphone camera to save contact details (MECARD)",
         vcardBtn: "Save to Contacts (.vcf)",
-        apiModalTitle: "Gemini API Key",
-        apiModalSub: "Enter your Google AI Studio key to enable AI scanning",
-        saveKeyBtn: "Save Key",
         shareAppSub: "Scan to open application"
       },
       pt: {
-        apiKeyBtn: "Chave API",
         shareBtn: "Compartilhar",
         scanTitle: "Escanear com Gemini AI",
         createNewBtn: "Criar Novo",
@@ -330,9 +291,6 @@
         qrTitle: "Código QR do Contato",
         qrSubtitle: "Escaneie com a câmera de qualquer celular para salvar o contato (MECARD)",
         vcardBtn: "Salvar nos Contatos (.vcf)",
-        apiModalTitle: "Chave Gemini API",
-        apiModalSub: "Insira sua chave do Google AI Studio para ativar a IA",
-        saveKeyBtn: "Salvar Chave",
         shareAppSub: "Escaneie para abrir o aplicativo"
       }
     };
@@ -340,11 +298,6 @@
     window.addEventListener('DOMContentLoaded', () => {
       const inputs = document.querySelectorAll('#contactForm input, #contactForm textarea');
       inputs.forEach(input => input.addEventListener('input', updateQR));
-      
-      const savedKey = localStorage.getItem('gemini_api_key');
-      if (savedKey) {
-        document.getElementById('apiKeyInput').value = savedKey;
-      }
       updateQR();
     });
 
@@ -369,21 +322,6 @@
       showToast("Formulario limpio para un nuevo contacto");
     }
 
-    function toggleApiKeyModal() {
-      document.getElementById('apiKeyModal').classList.toggle('hidden');
-    }
-
-    function saveApiKey() {
-      const key = document.getElementById('apiKeyInput').value.trim();
-      if (key && key.length > 5) {
-        localStorage.setItem('gemini_api_key', key);
-        toggleApiKeyModal();
-        showToast("¡API Key guardada con éxito!");
-      } else {
-        showToast("Ingresa una clave válida");
-      }
-    }
-
     function handleImageSelect(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -403,51 +341,21 @@
     }
 
     async function processImageWithGemini(base64DataUrl, mimeType) {
-      const apiKey = localStorage.getItem('gemini_api_key');
-      if (!apiKey) {
-        toggleApiKeyModal();
-        showToast("Configura tu API Key de Gemini primero");
-        hideStatus();
-        return;
-      }
-
       showStatus("Gemini AI analizando la tarjeta...");
 
       const base64Image = base64DataUrl.split(',')[1];
-      
-      const promptText = `Extrae los datos de esta tarjeta de presentación y responde estrictamente en formato JSON válido con las siguientes claves: 
-      firstName, lastName, organization, jobTitle, countryCode, workPhone, extension, mobilePhone, email, website, address. 
-      Regla especial para countryCode: Si el teléfono tiene código de país explícito (ej: +506, +1, (506), +34), colócalo en countryCode. Si no incluye código explícito, déjalo como '' para no sobrescribir el valor predeterminado.
-      Si algún otro campo no existe, déjalo como cadena vacía ''.`;
-
-      // Endpoint actualizado a gemini-3.8-flash según solicitud de la API
-      const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
-
-      const payload = {
-        contents: [{
-          parts: [
-            { text: promptText },
-            {
-              inlineData: {
-                mimeType: mimeType || 'image/jpeg',
-                data: base64Image
-              }
-            }
-          ]
-        }]
-      };
 
       try {
-        const response = await fetch(apiEndpoint, {
+        const response = await fetch('/api/scan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ base64Image, mimeType })
         });
 
         const result = await response.json();
         
         if (result.error) {
-          throw new Error(result.error.message || "Error en la solicitud a Gemini");
+          throw new Error(result.error);
         }
 
         if (result.candidates && result.candidates[0].content.parts[0].text) {
@@ -481,7 +389,7 @@
       } catch (err) {
         console.error(err);
         hideStatus();
-        showToast("Error al procesar: " + (err.message || "Revisa tu API Key"));
+        showToast("Error al procesar la imagen");
       }
     }
 
@@ -545,12 +453,12 @@
 
       const blob = new Blob([vcard], { type: "text/vcard;charset=utf-8" });
       const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `${fn}_${ln}`.trim() + ".vcf");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const linkEl = document.createElement("a");
+      linkEl.href = url;
+      linkEl.setAttribute("download", `${fn}_${ln}`.trim() + ".vcf");
+      document.body.appendChild(linkEl);
+      linkEl.click();
+      document.body.removeChild(linkEl);
     }
 
     function openShareModal() {
