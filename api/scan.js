@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     Regla especial para countryCode: Si el teléfono tiene código de país explícito (ej: +506, +1, (506), +34), colócalo en countryCode. Si no incluye código explícito, déjalo como '' para no sobrescribir el valor predeterminado.
     Si algún otro campo no existe, déjalo como cadena vacía ''.`;
 
-    // Actualizado al modelo recomendado por la API de Google
+    // Actualizado al modelo oficial requerido por la API de Google
     const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(apiEndpoint, {
