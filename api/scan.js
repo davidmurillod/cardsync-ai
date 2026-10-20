@@ -1,1 +1,45 @@
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'Server API key not configured' });
+  }
+
+  try {
+    const { base64Image, mimeType } = req.body;
+
+    const promptText = `Extrae los datos de esta tarjeta de presentación y responde estrictamente en formato JSON válido con las siguientes claves: 
+    firstName, lastName, organization, jobTitle, countryCode, workPhone, extension, mobilePhone, email, website, address. 
+    Regla especial para countryCode: Si el teléfono tiene código de país explícito (ej: +506, +1, (506), +34), colócalo en countryCode. Si no incluye código explícito, déjalo como '' para no sobrescribir el valor predeterminado.
+    Si algún otro campo no existe, déjalo como cadena vacía ''.`;
+
+    const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    const response = await fetch(apiEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: promptText },
+            {
+              inlineData: {
+                mimeType: mimeType || 'image/jpeg',
+                data: base64Image
+              }
+            }
+          ]
+        }]
+      })
+    });
+
+    const result = await response.json();
+    return res.status(200).json(result);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Error processing image with Gemini' });
+  }
+}
