@@ -26,9 +26,6 @@
   <!-- QRCode.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   
-  <!-- Tesseract.js (Respaldo OCR) -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-
   <style>
     .glass-card {
       background: rgba(30, 41, 59, 0.7);
@@ -40,15 +37,30 @@
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans pb-12">
 
   <!-- Header / Barra Superior -->
-  <header class="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex justify-between items-center">
+  <header class="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex flex-wrap justify-between items-center gap-2">
     <div class="flex items-center space-x-2">
-      <i class="fa-solid fa-[#2563eb] fa-address-card text-blue-500 text-2xl"></i>
+      <i class="fa-solid fa-address-card text-blue-500 text-2xl"></i>
       <span class="font-bold text-lg tracking-wide bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">CardSync AI</span>
     </div>
-    <div class="flex items-center space-x-3">
-      <button onclick="openShareModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-sm font-medium flex items-center gap-2 transition">
+    
+    <div class="flex items-center space-x-2">
+      <!-- Selector de Idioma -->
+      <select id="langSelect" onchange="changeLanguage(this.value)" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-blue-500">
+        <option value="es">Español 🇪🇸</option>
+        <option value="en">English 🇺🇸</option>
+        <option value="pt">Português 🇧🇷</option>
+      </select>
+
+      <!-- Botón Configurar API Key -->
+      <button onclick="toggleApiKeyModal()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-key text-yellow-400"></i>
+        <span data-i18n="apiKeyBtn">API Key</span>
+      </button>
+
+      <!-- Botón Compartir App -->
+      <button onclick="openShareModal()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
         <i class="fa-solid fa-share-nodes text-blue-400"></i>
-        <span>Compartir App</span>
+        <span data-i18n="shareBtn">Compartir</span>
       </button>
     </div>
   </header>
@@ -58,21 +70,29 @@
 
     <!-- Sección Capturar Tarjeta -->
     <section class="glass-card rounded-2xl p-5 shadow-xl space-y-4">
-      <h2 class="text-md font-semibold text-slate-200 flex items-center gap-2">
-        <i class="fa-solid fa-camera text-blue-400"></i> Escanear Tarjeta de Presentación
-      </h2>
+      <div class="flex justify-between items-center">
+        <h2 class="text-md font-semibold text-slate-200 flex items-center gap-2">
+          <i class="fa-solid fa-camera text-blue-400"></i>
+          <span data-i18n="scanTitle">Escanear con Gemini AI</span>
+        </h2>
+        <!-- Botón Crear Nuevo / Limpiar -->
+        <button onclick="createNewForm()" class="px-3 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/30 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-plus"></i>
+          <span data-i18n="createNewBtn">Crear Nuevo</span>
+        </button>
+      </div>
 
       <!-- Área de carga / vista previa -->
-      <div id="dropZone" class="border-2 border-dashed border-slate-700 hover:border-blue-500 rounded-xl p-6 text-center cursor-pointer transition bg-slate-800/40 relative overflow-hidden group">
+      <div id="dropZone" onclick="document.getElementById('cardInput').click()" class="border-2 border-dashed border-slate-700 hover:border-blue-500 rounded-xl p-6 text-center cursor-pointer transition bg-slate-800/40 relative overflow-hidden group">
         <input type="file" id="cardInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelect(event)">
         
         <div id="uploadPlaceholder" class="space-y-3">
           <div class="w-12 h-12 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center mx-auto text-xl">
-            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
           </div>
           <div>
-            <p class="font-medium text-slate-200">Haz clic o arrastra la foto de la tarjeta</p>
-            <p class="text-xs text-slate-400 mt-1">Usa la cámara o sube un archivo desde la galería</p>
+            <p class="font-medium text-slate-200" data-i18n="uploadText">Sube la foto de la tarjeta de presentación</p>
+            <p class="text-xs text-slate-400 mt-1" data-i18n="uploadSubtext">Gemini extraerá los datos automáticamente</p>
           </div>
         </div>
 
@@ -81,7 +101,7 @@
 
       <div id="statusMessage" class="hidden p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs flex items-center gap-2">
         <i class="fa-solid fa-circle-notch fa-spin"></i>
-        <span id="statusText">Procesando imagen con IA...</span>
+        <span id="statusText" data-i18n="statusProcessing">Gemini analizando la tarjeta...</span>
       </div>
     </section>
 
@@ -89,7 +109,8 @@
     <section class="glass-card rounded-2xl p-5 shadow-xl space-y-4">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
         <h2 class="text-md font-semibold text-slate-200 flex items-center gap-2">
-          <i class="fa-solid fa-user-pen text-blue-400"></i> Información del Contacto
+          <i class="fa-solid fa-user-pen text-blue-400"></i>
+          <span data-i18n="formTitle">Información del Contacto</span>
         </h2>
         <span class="text-xs font-mono bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded">vCard 3.0</span>
       </div>
@@ -97,58 +118,461 @@
       <form id="contactForm" class="space-y-3 text-sm" onsubmit="event.preventDefault(); updateQR();">
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">Nombre(s) *</label>
+            <label class="block text-xs font-medium text-slate-400 mb-1" data-i18n="firstNameLabel">Nombre(s) *</label>
             <input type="text" id="firstName" required class="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500">
           </div>
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">Apellido(s) *</label>
+            <label class="block text-xs font-medium text-slate-400 mb-1" data-i18n="lastNameLabel">Apellido(s) *</label>
             <input type="text" id="lastName" required class="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Empresa / Organización</label>
+          <label class="block text-xs font-medium text-slate-400 mb-1" data-i18n="orgLabel">Empresa / Organización</label>
           <input type="text" id="organization" class="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500">
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Cargo / Puesto</label>
+          <label class="block text-xs font-medium text-slate-400 mb-1" data-i18n="jobLabel">Cargo / Puesto</label>
           <input type="text" id="jobTitle" class="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500">
         </div>
 
         <!-- Teléfonos -->
         <div class="p-3 bg-slate-800/40 rounded-xl border border-slate-800 space-y-3">
-          <p class="text-xs font-semibold text-blue-400 uppercase tracking-wider">Números Telefónicos</p>
+          <p class="text-xs font-semibold text-blue-400 uppercase tracking-wider" data-i18n="phonesHeader">Números Telefónicos</p>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Cód. País</label>
+            <label class="block text-xs text-slate-400 mb-1" data-i18n="countryCodeLabel">Cód. País</label>
             <input type="text" id="countryCode" value="+506" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 focus:outline-none focus:border-blue-500">
           </div>
           <div class="grid grid-cols-3 gap-2">
             <div class="col-span-2">
-              <label class="block text-xs text-slate-400 mb-1">Teléfono Fijo / Trabajo</label>
+              <label class="block text-xs text-slate-400 mb-1" data-i18n="workPhoneLabel">Teléfono Fijo / Trabajo</label>
               <input type="text" id="workPhone" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 focus:outline-none focus:border-blue-500">
             </div>
             <div>
-              <label class="block text-xs text-slate-400 mb-1">Ext.</label>
+              <label class="block text-xs text-slate-400 mb-1" data-i18n="extLabel">Ext.</label>
               <input type="text" id="extension" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 focus:outline-none focus:border-blue-500">
             </div>
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Móvil / Celular</label>
+            <label class="block text-xs text-slate-400 mb-1" data-i18n="mobilePhoneLabel">Móvil / Celular</label>
             <input type="text" id="mobilePhone" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 focus:outline-none focus:border-blue-500">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Correo Electrónico</label>
+          <label class="block text-xs font-medium text-slate-400 mb-1" data-i18n="emailLabel">Correo Electrónico</label>
           <input type="email" id="email" class="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500">
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Sitio Web</label>
+          <label class="block text-xs font-medium text-slate-400 mb-1" data-i18n="webLabel">Sitio Web</label>
           <input type="url" id="website" class="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500">
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Dirección Física</label>
-          <textarea id="address" rows
+          <label class="block text-xs font-medium text-slate-400 mb-1" data-i18n="addressLabel">Dirección Física</label>
+          <textarea id="address" rows="2" class="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 resize-none"></textarea>
+        </div>
+      </form>
+    </section>
+
+    <!-- Código QR del Contacto & Exportación -->
+    <section class="glass-card rounded-2xl p-5 shadow-xl text-center space-y-4">
+      <h2 class="text-md font-semibold text-slate-200 flex items-center justify-center gap-2">
+        <i class="fa-solid fa-qrcode text-blue-400"></i>
+        <span data-i18n="qrTitle">Código QR del Contacto</span>
+      </h2>
+      <p class="text-xs text-slate-400" data-i18n="qrSubtitle">Escanea con la cámara de cualquier teléfono para guardar el contacto (MECARD)</p>
+      
+      <div id="qrcode" class="bg-white p-4 rounded-xl inline-block shadow-lg border border-slate-200"></div>
+
+      <div class="pt-2 flex flex-col sm:flex-row gap-2 justify-center">
+        <button onclick="downloadVCard()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 px-4 rounded-xl shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 transition text-sm">
+          <i class="fa-solid fa-file-arrow-down"></i>
+          <span data-i18n="vcardBtn">Guardar en Agenda (.vcf)</span>
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal Configurar API Key -->
+  <div id="apiKeyModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-card bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl relative">
+      <button onclick="toggleApiKeyModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto text-yellow-400 text-xl">
+        <i class="fa-solid fa-key"></i>
+      </div>
+
+      <div>
+        <h3 class="text-lg font-bold text-slate-100" data-i18n="apiModalTitle">Clave de Gemini API</h3>
+        <p class="text-xs text-slate-400 mt-1" data-i18n="apiModalSub">Ingresa tu llave de Google AI Studio para activar la IA</p>
+      </div>
+
+      <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500">
+
+      <button onclick="saveApiKey()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-xl shadow-lg transition" data-i18n="saveKeyBtn">
+        Guardar Clave
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal Compartir App -->
+  <div id="shareModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-card bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl relative">
+      <button onclick="openShareModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div class="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto text-blue-400 text-xl">
+        <i class="fa-solid fa-mobile-screen-button"></i>
+      </div>
+      <h3 class="text-lg font-bold text-slate-100">CardSync AI</h3>
+      <p class="text-xs text-slate-400" data-i18n="shareAppSub">Escanea para abrir la aplicación</p>
+      <div id="appQrCode" class="bg-white p-3 rounded-xl inline-block shadow-md"></div>
+      <input type="text" id="appUrlInput" readonly class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none text-center">
+    </div>
+  </div>
+
+  <!-- Toast Notificación -->
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs px-4 py-2 rounded-full shadow-lg font-medium opacity-0 pointer-events-none transition-opacity duration-300 z-50">
+    ¡Listo!
+  </div>
+
+  <!-- JavaScript Multilenguaje & Gemini AI Logic -->
+  <script>
+    const TARGET_DOMAIN = "https://cardsync-ai.com";
+
+    // Diccionario Multilenguaje
+    const translations = {
+      es: {
+        apiKeyBtn: "API Key",
+        shareBtn: "Compartir",
+        scanTitle: "Escanear con Gemini AI",
+        createNewBtn: "Crear Nuevo",
+        uploadText: "Sube la foto de la tarjeta de presentación",
+        uploadSubtext: "Gemini extraerá los datos automáticamente",
+        statusProcessing: "Gemini analizando la tarjeta...",
+        formTitle: "Información del Contacto",
+        firstNameLabel: "Nombre(s) *",
+        lastNameLabel: "Apellido(s) *",
+        orgLabel: "Empresa / Organización",
+        jobLabel: "Cargo / Puesto",
+        phonesHeader: "Números Telefónicos",
+        countryCodeLabel: "Cód. País",
+        workPhoneLabel: "Teléfono Fijo / Trabajo",
+        extLabel: "Ext.",
+        mobilePhoneLabel: "Móvil / Celular",
+        emailLabel: "Correo Electrónico",
+        webLabel: "Sitio Web",
+        addressLabel: "Dirección Física",
+        qrTitle: "Código QR del Contacto",
+        qrSubtitle: "Escanea con la cámara de cualquier teléfono para guardar el contacto (MECARD)",
+        vcardBtn: "Guardar en Agenda (.vcf)",
+        apiModalTitle: "Clave de Gemini API",
+        apiModalSub: "Ingresa tu llave de Google AI Studio para activar la IA",
+        saveKeyBtn: "Guardar Clave",
+        shareAppSub: "Escanea para abrir la aplicación"
+      },
+      en: {
+        apiKeyBtn: "API Key",
+        shareBtn: "Share",
+        scanTitle: "Scan with Gemini AI",
+        createNewBtn: "Create New",
+        uploadText: "Upload business card photo",
+        uploadSubtext: "Gemini will extract contact details automatically",
+        statusProcessing: "Gemini analyzing business card...",
+        formTitle: "Contact Information",
+        firstNameLabel: "First Name *",
+        lastNameLabel: "Last Name *",
+        orgLabel: "Company / Organization",
+        jobLabel: "Job Title",
+        phonesHeader: "Phone Numbers",
+        countryCodeLabel: "Country Code",
+        workPhoneLabel: "Work Phone",
+        extLabel: "Ext.",
+        mobilePhoneLabel: "Mobile / Cell",
+        emailLabel: "Email Address",
+        webLabel: "Website",
+        addressLabel: "Physical Address",
+        qrTitle: "Contact QR Code",
+        qrSubtitle: "Scan with any smartphone camera to save contact details (MECARD)",
+        vcardBtn: "Save to Contacts (.vcf)",
+        apiModalTitle: "Gemini API Key",
+        apiModalSub: "Enter your Google AI Studio key to enable AI scanning",
+        saveKeyBtn: "Save Key",
+        shareAppSub: "Scan to open application"
+      },
+      pt: {
+        apiKeyBtn: "Chave API",
+        shareBtn: "Compartilhar",
+        scanTitle: "Escanear com Gemini AI",
+        createNewBtn: "Criar Novo",
+        uploadText: "Envie a foto do cartão de visita",
+        uploadSubtext: "Gemini extrairá os dados automaticamente",
+        statusProcessing: "Gemini analisando o cartão...",
+        formTitle: "Informações de Contato",
+        firstNameLabel: "Nome *",
+        lastNameLabel: "Sobrenome *",
+        orgLabel: "Empresa / Organização",
+        jobLabel: "Cargo / Função",
+        phonesHeader: "Números de Telefone",
+        countryCodeLabel: "Cód. País",
+        workPhoneLabel: "Telefone Comercial",
+        extLabel: "Ramal",
+        mobilePhoneLabel: "Celular",
+        emailLabel: "E-mail",
+        webLabel: "Website",
+        addressLabel: "Endereço Físico",
+        qrTitle: "Código QR do Contato",
+        qrSubtitle: "Escaneie com a câmera de qualquer celular para salvar o contato (MECARD)",
+        vcardBtn: "Salvar nos Contatos (.vcf)",
+        apiModalTitle: "Chave Gemini API",
+        apiModalSub: "Insira sua chave do Google AI Studio para ativar a IA",
+        saveKeyBtn: "Salvar Chave",
+        shareAppSub: "Escaneie para abrir o aplicativo"
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const inputs = document.querySelectorAll('#contactForm input, #contactForm textarea');
+      inputs.forEach(input => input.addEventListener('input', updateQR));
+      
+      const savedKey = localStorage.getItem('gemini_api_key');
+      if (savedKey) {
+        document.getElementById('apiKeyInput').value = savedKey;
+      }
+      updateQR();
+    });
+
+    function changeLanguage(lang) {
+      const dict = translations[lang] || translations.es;
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key]) {
+          el.innerText = dict[key];
+        }
+      });
+    }
+
+    function createNewForm() {
+      document.getElementById('contactForm').reset();
+      document.getElementById('countryCode').value = "+506";
+      document.getElementById('imagePreview').src = "";
+      document.getElementById('imagePreview').classList.add('hidden');
+      document.getElementById('uploadPlaceholder').classList.remove('hidden');
+      document.getElementById('cardInput').value = "";
+      updateQR();
+      showToast("Formulario limpio para un nuevo contacto");
+    }
+
+    function toggleApiKeyModal() {
+      document.getElementById('apiKeyModal').classList.toggle('hidden');
+    }
+
+    function saveApiKey() {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      if (key) {
+        localStorage.setItem('gemini_api_key', key);
+        toggleApiKeyModal();
+        showToast("¡API Key guardada con éxito!");
+      }
+    }
+
+    function handleImageSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const imagePreview = document.getElementById('imagePreview');
+        const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+        
+        imagePreview.src = e.target.result;
+        imagePreview.classList.remove('hidden');
+        uploadPlaceholder.classList.add('hidden');
+
+        processImageWithGemini(e.target.result, file.type);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function processImageWithGemini(base64DataUrl, mimeType) {
+      const apiKey = localStorage.getItem('gemini_api_key');
+      if (!apiKey) {
+        toggleApiKeyModal();
+        showToast("Configura tu API Key de Gemini primero");
+        hideStatus();
+        return;
+      }
+
+      showStatus("Gemini AI analizando la tarjeta...");
+
+      const base64Image = base64DataUrl.split(',')[1];
+      
+      const promptText = `Extrae los datos de esta tarjeta de presentación y responde estrictamente en formato JSON válido con las siguientes claves: 
+      firstName, lastName, organization, jobTitle, countryCode, workPhone, extension, mobilePhone, email, website, address. 
+      Regla especial para countryCode: Si el teléfono tiene código de país explícito (ej: +506, +1, (506), +34), colócalo en countryCode. Si no incluye código explícito, déjalo como '' para no sobrescribir el valor predeterminado.
+      Si algún otro campo no existe, déjalo como cadena vacía ''.`;
+
+      const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+      const payload = {
+        contents: [{
+          parts: [
+            { text: promptText },
+            {
+              inlineData: {
+                mimeType: mimeType,
+                data: base64Image
+              }
+            }
+          ]
+        }]
+      };
+
+      try {
+        const response = await fetch(apiEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (result.candidates && result.candidates[0].content.parts[0].text) {
+          let textResponse = result.candidates[0].content.parts[0].text;
+          textResponse = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+          
+          const data = JSON.parse(textResponse);
+          
+          if (data.firstName) document.getElementById('firstName').value = data.firstName;
+          if (data.lastName) document.getElementById('lastName').value = data.lastName;
+          if (data.organization) document.getElementById('organization').value = data.organization;
+          if (data.jobTitle) document.getElementById('jobTitle').value = data.jobTitle;
+          
+          // Asignación inteligente de Código de País (+ o paréntesis)
+          if (data.countryCode && (data.countryCode.includes('+') || data.countryCode.includes('('))) {
+            document.getElementById('countryCode').value = data.countryCode;
+          }
+          
+          if (data.workPhone) document.getElementById('workPhone').value = data.workPhone;
+          if (data.extension) document.getElementById('extension').value = data.extension;
+          if (data.mobilePhone) document.getElementById('mobilePhone').value = data.mobilePhone;
+          if (data.email) document.getElementById('email').value = data.email;
+          if (data.website) document.getElementById('website').value = data.website;
+          if (data.address) document.getElementById('address').value = data.address;
+
+          updateQR();
+          hideStatus();
+          showToast("¡Datos extraídos con Gemini AI!");
+        } else {
+          throw new Error("Respuesta de IA no válida");
+        }
+      } catch (err) {
+        console.error(err);
+        hideStatus();
+        showToast("Error al procesar con Gemini. Revisa tu API Key.");
+      }
+    }
+
+    function updateQR() {
+      const firstName = document.getElementById('firstName').value || "Nombre";
+      const lastName = document.getElementById('lastName').value || "";
+      const org = document.getElementById('organization').value || "";
+      const job = document.getElementById('jobTitle').value || "";
+      const code = document.getElementById('countryCode').value || "";
+      const work = document.getElementById('workPhone').value || "";
+      const mobile = document.getElementById('mobilePhone').value || "";
+      const email = document.getElementById('email').value || "";
+      const website = document.getElementById('website').value || "";
+
+      let fullPhone = mobile ? `${code}${mobile}` : (work ? `${code}${work}` : "");
+
+      // Estructura de código MECARD
+      let mecard = `MECARD:N:${lastName},${firstName};`;
+      if (org) mecard += `ORG:${org};`;
+      if (job) mecard += `TIL:${job};`;
+      if (fullPhone) mecard += `TEL:${fullPhone};`;
+      if (email) mecard += `EMAIL:${email};`;
+      if (website) mecard += `URL:${website};`;
+      mecard += `;`;
+
+      const qrContainer = document.getElementById('qrcode');
+      qrContainer.innerHTML = "";
+      
+      new QRCode(qrContainer, {
+        text: mecard,
+        width: 180,
+        height: 180,
+        colorDark: "#0f172a",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    function downloadVCard() {
+      const fn = document.getElementById('firstName').value || "Contacto";
+      const ln = document.getElementById('lastName').value || "";
+      const org = document.getElementById('organization').value || "";
+      const job = document.getElementById('jobTitle').value || "";
+      const code = document.getElementById('countryCode').value || "";
+      const work = document.getElementById('workPhone').value || "";
+      const mobile = document.getElementById('mobilePhone').value || "";
+      const email = document.getElementById('email').value || "";
+      const website = document.getElementById('website').value || "";
+      const address = document.getElementById('address').value || "";
+
+      let vcard = "BEGIN:VCARD\nVERSION:3.0\n";
+      vcard += `N:${ln};${fn};;;\n`;
+      vcard += `FN:${fn} ${ln}\n`;
+      if (org) vcard += `ORG:${org}\n`;
+      if (job) vcard += `TITLE:${job}\n`;
+      if (work) vcard += `TEL;TYPE=WORK,VOICE:${code}${work}\n`;
+      if (mobile) vcard += `TEL;TYPE=CELL,VOICE:${code}${mobile}\n`;
+      if (email) vcard += `EMAIL;TYPE=INTERNET:${email}\n`;
+      if (website) vcard += `URL:${website}\n`;
+      if (address) vcard += `ADR;TYPE=WORK:;;${address};;;;\n`;
+      vcard += "END:VCARD";
+
+      const blob = new Blob([vcard], { type: "text/vcard;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `${fn}_${ln}`.trim() + ".vcf");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function openShareModal() {
+      const appUrl = TARGET_DOMAIN;
+      document.getElementById('appUrlInput').value = appUrl;
+      const qrContainer = document.getElementById('appQrCode');
+      qrContainer.innerHTML = "";
+      new QRCode(qrContainer, { text: appUrl, width: 140, height: 140 });
+      document.getElementById('shareModal').classList.toggle('hidden');
+    }
+
+    function showStatus(msg) {
+      document.getElementById('statusText').innerText = msg;
+      document.getElementById('statusMessage').classList.remove('hidden');
+    }
+
+    function hideStatus() {
+      document.getElementById('statusMessage').classList.add('hidden');
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2500);
+    }
+  </script>
+</body>
+</html>
