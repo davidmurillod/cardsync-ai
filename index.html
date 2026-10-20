@@ -368,7 +368,7 @@
 
       try {
         // Comprimimos la imagen instantáneamente antes de enviarla
-        const compressed = await compressImage(file, 800, 0.8);
+        const compressed = await compressImage(file, 500, 0.7);
 
         const imagePreview = document.getElementById('imagePreview');
         const uploadPlaceholder = document.getElementById('uploadPlaceholder');
