@@ -5,7 +5,6 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.error("API Key not found in environment variables");
     return res.status(500).json({ error: 'Server API key not configured' });
   }
 
@@ -17,7 +16,8 @@ export default async function handler(req, res) {
     Regla especial para countryCode: Si el teléfono tiene código de país explícito (ej: +506, +1, (506), +34), colócalo en countryCode. Si no incluye código explícito, déjalo como '' para no sobrescribir el valor predeterminado.
     Si algún otro campo no existe, déjalo como cadena vacía ''.`;
 
-    const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // Actualizado a gemini-2.5-flash
+    const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(apiEndpoint, {
       method: 'POST',
@@ -39,9 +39,6 @@ export default async function handler(req, res) {
 
     const result = await response.json();
     
-    // Imprimir respuesta de Gemini en los logs para depuración
-    console.log("Gemini API Response:", JSON.stringify(result));
-
     if (result.error) {
       console.error("Gemini returned an error:", result.error);
       return res.status(500).json({ error: result.error.message || 'Gemini API Error' });
