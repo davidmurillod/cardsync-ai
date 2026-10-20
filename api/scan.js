@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     Si algún otro campo no existe, déjalo como cadena vacía ''.`;
 
     // Actualizado al modelo oficial requerido por la API de Google
-    const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(apiEndpoint, {
       method: 'POST',
