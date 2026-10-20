@@ -5,6 +5,7 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
+    console.error("API Key not found in environment variables");
     return res.status(500).json({ error: 'Server API key not configured' });
   }
 
@@ -37,9 +38,18 @@ export default async function handler(req, res) {
     });
 
     const result = await response.json();
+    
+    // Imprimir respuesta de Gemini en los logs para depuración
+    console.log("Gemini API Response:", JSON.stringify(result));
+
+    if (result.error) {
+      console.error("Gemini returned an error:", result.error);
+      return res.status(500).json({ error: result.error.message || 'Gemini API Error' });
+    }
+
     return res.status(200).json(result);
   } catch (err) {
-    console.error(err);
+    console.error("Catch error in serverless function:", err);
     return res.status(500).json({ error: 'Error processing image with Gemini' });
   }
 }
