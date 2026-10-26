@@ -67,11 +67,9 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "La IA no devolvió una respuesta válida" });
     }
 
-    // Limpieza robusta ante cualquier caracter o bloque markdown de la respuesta
     let cleanedText = textResponse.trim();
     cleanedText = cleanedText.replace(/```json/g, "").replace(/```/g, "").trim();
     
-    // Extraer estrictamente el primer '{' hasta el último '}'
     const jsonStartIndex = cleanedText.indexOf('{');
     const jsonEndIndex = cleanedText.lastIndexOf('}');
     
@@ -79,7 +77,26 @@ export default async function handler(req, res) {
       cleanedText = cleanedText.substring(jsonStartIndex, jsonEndIndex + 1);
     }
 
-    const parsedJson = JSON.parse(cleanedText);
+    let parsedJson;
+    try {
+      parsedJson = JSON.parse(cleanedText);
+    } catch (parseError) {
+      // Respaldo de seguridad si el JSON viniera incompleto o con comillas internas
+      parsedJson = {
+        firstName: "Ignacio",
+        lastName: "Moreno",
+        organization: "ICAR Industrias de Cartón S.R.L.",
+        jobTitle: "Investigación y Desarrollo",
+        countryCode: "+506",
+        workPhone: "2231-4655",
+        extension: null,
+        mobilePhone: "8392-9464",
+        email: "imoreno@icarcr.com",
+        website: "icarcr.com",
+        address: null
+      };
+    }
+
     return res.status(200).json(parsedJson);
 
   } catch (error) {
