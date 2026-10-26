@@ -11,7 +11,8 @@ export default async function handler(req, res) {
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // Volvemos al modelo y versión exactos que estabas utilizando
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
 
     const prompt = `Extrae los datos de esta tarjeta de presentación en este JSON exacto. Si un campo no existe, usa null:
 {"firstName":null,"lastName":null,"organization":null,"jobTitle":null,"countryCode":null,"workPhone":null,"extension":null,"mobilePhone":null,"email":null,"website":null,"address":null}`;
@@ -38,7 +39,7 @@ export default async function handler(req, res) {
         generationConfig: {
           responseMimeType: "application/json",
           temperature: 0.1,
-          maxOutputTokens: 800, // Aumentado para evitar cortes de texto
+          maxOutputTokens: 800, // Evita que la respuesta se corte a mitad de camino
         },
       }),
     });
@@ -55,7 +56,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "La IA no devolvió una respuesta válida" });
     }
 
-    // Limpiamos cualquier bloque de código markdown si estuviera presente
+    // Limpieza segura del formato JSON devuelto por la IA
     let cleanedText = textResponse.trim();
     if (cleanedText.startsWith("```json")) {
       cleanedText = cleanedText.replace(/^```json/, "").replace(/```\$/, "").trim();
