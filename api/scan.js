@@ -11,9 +11,9 @@ export default async function handler(req, res) {
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+    // Usamos el modelo oficial optimizado para velocidad y visión
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-    // PROMPT ULTRA CORTO Y DIRECTO
     const prompt = `Extrae los datos de esta tarjeta de presentación en este JSON exacto. Si un campo no existe, usa null:
 {"firstName":null,"lastName":null,"organization":null,"jobTitle":null,"countryCode":null,"workPhone":null,"extension":null,"mobilePhone":null,"email":null,"website":null,"address":null}`;
 
@@ -36,20 +36,30 @@ export default async function handler(req, res) {
             ],
           },
         ],
-        // CONFIGURACIÓN DE GENERACIÓN RÁPIDA
         generationConfig: {
-          responseMimeType: "application/json", // Fuerza respuesta JSON pura sin Markdown
-          temperature: 0.1,                     // Baja creatividad = respuesta más rápida y precisa
-          maxOutputTokens: 300,                 // Limite estricto de longitud de respuesta
+          responseMimeType: "application/json",
+          temperature: 0.1,
+          maxOutputTokens: 300,
         },
       }),
     });
 
     const data = await response.json();
-    return res.status(200).json(data);
+
+    if (!response.ok) {
+      const errorMsg = data.error?.message || "Error al comunicarse con la API de Gemini";
+      return res.status(response.status).json({ error: errorMsg });
+    }
+
+    // Verificamos que la estructura de la respuesta sea correcta
+    if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+      return res.status(200).json(data);
+    } else {
+      return res.status(500).json({ error: "La IA no devolvió una respuesta válida" });
+    }
 
   } catch (error) {
     console.error("Error en /api/scan:", error);
-    return res.status(500).json({ error: "Error interno del servidor" });
+    return res.status(500).json({ error: error.message || "Error interno del servidor" });
   }
 }
