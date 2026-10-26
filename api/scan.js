@@ -11,8 +11,7 @@ export default async function handler(req, res) {
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
-    // Usamos el modelo oficial optimizado para velocidad y visión
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const prompt = `Extrae los datos de esta tarjeta de presentación en este JSON exacto. Si un campo no existe, usa null:
 {"firstName":null,"lastName":null,"organization":null,"jobTitle":null,"countryCode":null,"workPhone":null,"extension":null,"mobilePhone":null,"email":null,"website":null,"address":null}`;
@@ -39,7 +38,7 @@ export default async function handler(req, res) {
         generationConfig: {
           responseMimeType: "application/json",
           temperature: 0.1,
-          maxOutputTokens: 300,
+          maxOutputTokens: 800, // Aumentado para evitar cortes de texto
         },
       }),
     });
@@ -51,12 +50,21 @@ export default async function handler(req, res) {
       return res.status(response.status).json({ error: errorMsg });
     }
 
-    // Verificamos que la estructura de la respuesta sea correcta
-    if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-      return res.status(200).json(data);
-    } else {
+    const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!textResponse) {
       return res.status(500).json({ error: "La IA no devolvió una respuesta válida" });
     }
+
+    // Limpiamos cualquier bloque de código markdown si estuviera presente
+    let cleanedText = textResponse.trim();
+    if (cleanedText.startsWith("```json")) {
+      cleanedText = cleanedText.replace(/^```json/, "").replace(/```\$/, "").trim();
+    } else if (cleanedText.startsWith("```")) {
+      cleanedText = cleanedText.replace(/^```/, "").replace(/```$/, "").trim();
+    }
+
+    const parsedJson = JSON.parse(cleanedText);
+    return res.status(200).json(parsedJson);
 
   } catch (error) {
     console.error("Error en /api/scan:", error);
