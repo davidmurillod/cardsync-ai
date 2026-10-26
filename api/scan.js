@@ -11,7 +11,8 @@ export default async function handler(req, res) {
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+    // Usamos el modelo oficial y estable gemini-1.5-flash con la versión v1
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const prompt = `Analiza la tarjeta de presentación y devuelve UNICAMENTE un objeto JSON válido, sin explicaciones ni formato markdown adicional, siguiendo esta estructura exacta. Si un campo no existe, usa null:
 {
@@ -77,26 +78,7 @@ export default async function handler(req, res) {
       cleanedText = cleanedText.substring(jsonStartIndex, jsonEndIndex + 1);
     }
 
-    let parsedJson;
-    try {
-      parsedJson = JSON.parse(cleanedText);
-    } catch (parseError) {
-      // Respaldo de seguridad si el JSON viniera incompleto o con comillas internas
-      parsedJson = {
-        firstName: "Ignacio",
-        lastName: "Moreno",
-        organization: "ICAR Industrias de Cartón S.R.L.",
-        jobTitle: "Investigación y Desarrollo",
-        countryCode: "+506",
-        workPhone: "2231-4655",
-        extension: null,
-        mobilePhone: "8392-9464",
-        email: "imoreno@icarcr.com",
-        website: "icarcr.com",
-        address: null
-      };
-    }
-
+    const parsedJson = JSON.parse(cleanedText);
     return res.status(200).json(parsedJson);
 
   } catch (error) {
