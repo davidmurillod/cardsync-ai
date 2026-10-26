@@ -3,50 +3,53 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Server API key not configured' });
-  }
-
   try {
     const { base64Image, mimeType } = req.body;
 
-    const promptText = `Extrae los datos de esta tarjeta de presentación y responde estrictamente en formato JSON válido con las siguientes claves: 
-    firstName, lastName, organization, jobTitle, countryCode, workPhone, extension, mobilePhone, email, website, address. 
-    Regla especial para countryCode: Si el teléfono tiene código de país explícito (ej: +506, +1, (506), +34), colócalo en countryCode. Si no incluye código explícito, déjalo como '' para no sobrescribir el valor predeterminado.
-    Si algún otro campo no existe, déjalo como cadena vacía ''.`;
-
-    // Actualizado al modelo oficial requerido por la API de Google
-    const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
-
-    const response = await fetch(apiEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: promptText },
-            {
-              inlineData: {
-                mimeType: mimeType || 'image/jpeg',
-                data: base64Image
-              }
-            }
-          ]
-        }]
-      })
-    });
-
-    const result = await response.json();
-    
-    if (result.error) {
-      console.error("Gemini returned an error:", result.error);
-      return res.status(500).json({ error: result.error.message || 'Gemini API Error' });
+    if (!base64Image || !mimeType) {
+      return res.status(400).json({ error: 'Falta la imagen o el tipo MIME' });
     }
 
-    return res.status(200).json(result);
-  } catch (err) {
-    console.error("Catch error in serverless function:", err);
-    return res.status(500).json({ error: 'Error processing image with Gemini' });
+    const apiKey = process.env.GEMINI_API_KEY;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+
+    // PROMPT ULTRA CORTO Y DIRECTO
+    const prompt = `Extrae los datos de esta tarjeta de presentación en este JSON exacto. Si un campo no existe, usa null:
+{"firstName":null,"lastName":null,"organization":null,"jobTitle":null,"countryCode":null,"workPhone":null,"extension":null,"mobilePhone":null,"email":null,"website":null,"address":null}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              {
+                inline_data: {
+                  mime_type: mimeType,
+                  data: base64Image,
+                },
+              },
+            ],
+          },
+        ],
+        // CONFIGURACIÓN DE GENERACIÓN RÁPIDA
+        generationConfig: {
+          responseMimeType: "application/json", // Fuerza respuesta JSON pura sin Markdown
+          temperature: 0.1,                     // Baja creatividad = respuesta más rápida y precisa
+          maxOutputTokens: 300,                 // Limite estricto de longitud de respuesta
+        },
+      }),
+    });
+
+    const data = await response.json();
+    return res.status(200).json(data);
+
+  } catch (error) {
+    console.error("Error en /api/scan:", error);
+    return res.status(500).json({ error: "Error interno del servidor" });
   }
 }
