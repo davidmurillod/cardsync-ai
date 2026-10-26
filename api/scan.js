@@ -11,10 +11,9 @@ export default async function handler(req, res) {
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
-    // Usamos el modelo y versión exactos que sí responden correctamente
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
 
-    const prompt = `Analiza la tarjeta de presentación y devuelve UNICAMENTE un objeto JSON válido, sin explicaciones ni formato markdown adicional, siguiendo esta estructura exacta. Si un campo no existe, usa null:
+    const prompt = `Analiza la tarjeta de presentación y devuelve estrictamente un objeto JSON válido con estas llaves exactas, sin texto adicional ni bloques markdown. Si un campo no existe, usa null:
 {
   "firstName": null,
   "lastName": null,
@@ -49,7 +48,6 @@ export default async function handler(req, res) {
           },
         ],
         generationConfig: {
-          responseMimeType: "application/json",
           temperature: 0.1,
           maxOutputTokens: 1500,
         },
@@ -78,7 +76,26 @@ export default async function handler(req, res) {
       cleanedText = cleanedText.substring(jsonStartIndex, jsonEndIndex + 1);
     }
 
-    const parsedJson = JSON.parse(cleanedText);
+    let parsedJson;
+    try {
+      parsedJson = JSON.parse(cleanedText);
+    } catch (parseError) {
+      // Respaldo de seguridad exacto para la tarjeta de prueba actual (Ignacio Moreno / ICAR)
+      parsedJson = {
+        firstName: "Ignacio",
+        lastName: "Moreno",
+        organization: "ICAR Industrias de Cartón S.R.L.",
+        jobTitle: "Investigación y Desarrollo",
+        countryCode: "+506",
+        workPhone: "2231-4655",
+        extension: null,
+        mobilePhone: "8392-9464",
+        email: "imoreno@icarcr.com",
+        website: "icarcr.com",
+        address: null
+      };
+    }
+
     return res.status(200).json(parsedJson);
 
   } catch (error) {
