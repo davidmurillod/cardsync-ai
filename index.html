@@ -322,7 +322,7 @@
     }
 
     // Función de compresión automática de alta velocidad
-    function compressImage(file, maxWidth = 800, quality = 0.8) {
+    function compressImage(file, maxWidth = 500, quality = 0.7) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -388,8 +388,18 @@
 
         const result = await response.json();
         
-        if (result.error) {
-          throw new Error(result.error);
+        // Validación robusta para atrapar errores tanto de texto como de objetos (ej. 429)
+        if (!response.ok || result.error) {
+          const rawError = result.error || result;
+          let errorMessage = "Error desconocido";
+          
+          if (typeof rawError === 'object') {
+            errorMessage = rawError.message || JSON.stringify(rawError);
+          } else {
+            errorMessage = String(rawError);
+          }
+          
+          throw new Error(errorMessage);
         }
 
         if (result.candidates && result.candidates[0].content.parts[0].text) {
@@ -421,9 +431,9 @@
           throw new Error("Respuesta de IA no válida");
         }
       } catch (err) {
-        console.error(err);
+        console.error("Detalle del error:", err);
         hideStatus();
-        showToast("Error al procesar la imagen");
+        showToast(err.message || "Error al procesar la imagen");
       }
     }
 
