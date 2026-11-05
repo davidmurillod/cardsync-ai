@@ -1,5 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -21,19 +19,15 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Falta configurar la clave GEMINI_API_KEY en Vercel' });
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    
-    // Usamos gemini-1.5-flash-latest para asegurar compatibilidad con la clave actual
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash-latest",
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.1,
-        maxOutputTokens: 1500,
-      }
-    });
+    // Usamos el endpoint directo de Vertex / Generative Language v1 con la clave de proyecto
+    const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-    const prompt = `Analiza la tarjeta de presentación y devuelve UNICAMENTE un objeto JSON válido, sin explicaciones ni formato markdown adicional, siguiendo esta estructura exacta. Si un campo no existe, usa null:
+    const payload = {
+      contents: [
+        {
+          parts: [
+            {
+              text: `Analiza la tarjeta de presentación y devuelve UNICAMENTE un objeto JSON válido, sin explicaciones ni formato markdown adicional, siguiendo esta estructura exacta. Si un campo no existe, usa null:
 {
   "firstName": null,
   "lastName": null,
@@ -46,19 +40,39 @@ export default async function handler(req, res) {
   "email": null,
   "website": null,
   "address": null
-}`;
-
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          data: base64Image,
-          mimeType: mimeType
+}`
+            },
+            {
+              inline_data: {
+                mime_type: mimeType,
+                data: base64Image
+              }
+            }
+          ]
         }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.1,
+        maxOutputTokens: 1500
       }
-    ]);
+    };
 
-    const responseText = result.response.text();
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || `Error HTTP ${response.status}`);
+    }
+
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!responseText) {
       return res.status(500).json({ error: "La IA no devolvió una respuesta válida" });
     }
