@@ -12,7 +12,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Falta la imagen o el tipo MIME' });
     }
 
-    // Limpiar el prefijo data URL si el navegador lo incluyó (ej. "data:image/jpeg;base64,...")
+    // Limpiar el prefijo data URL si el navegador lo incluyó
     if (base64Image.includes('base64,')) {
       base64Image = base64Image.split('base64,')[1];
     }
@@ -72,30 +72,12 @@ export default async function handler(req, res) {
       cleanedText = cleanedText.substring(jsonStartIndex, jsonEndIndex + 1);
     }
 
-    let parsedJson;
-    try {
-      parsedJson = JSON.parse(cleanedText);
-    } catch (parseError) {
-      // Respaldo de seguridad en caso de discrepancias en el formato de texto
-      parsedJson = {
-        firstName: "Ignacio",
-        lastName: "Moreno",
-        organization: "ICAR Industrias de Cartón S.R.L.",
-        jobTitle: "Investigación y Desarrollo",
-        countryCode: "+506",
-        workPhone: "2231-4655",
-        extension: null,
-        mobilePhone: "8392-9464",
-        email: "imoreno@icarcr.com",
-        website: "icarcr.com",
-        address: null
-      };
-    }
-
+    const parsedJson = JSON.parse(cleanedText);
     return res.status(200).json(parsedJson);
 
   } catch (error) {
-    console.error("Error en /api/scan:", error);
-    return res.status(500).json({ error: error.message || "Error interno del servidor" });
+    console.error("Error detallado en /api/scan:", error);
+    // Devolvemos el error técnico exacto para verlo en la interfaz
+    return res.status(500).json({ error: "Error técnico: " + (error.message || error.toString()) });
   }
 }
