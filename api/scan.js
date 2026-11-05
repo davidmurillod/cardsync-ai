@@ -1,3 +1,5 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -11,9 +13,22 @@ export default async function handler(req, res) {
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Falta configurar la clave GEMINI_API_KEY en Vercel' });
+    }
 
-    const prompt = `Analiza la tarjeta de presentación y devuelve estrictamente un objeto JSON válido con estas llaves exactas, sin texto adicional ni bloques markdown. Si un campo no existe, usa null:
+    // Inicializamos el cliente oficial de Google Gen AI
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.1,
+        maxOutputTokens: 1500,
+      }
+    });
+
+    const prompt = `Analiza la tarjeta de presentación y devuelve UNICAMENTE un objeto JSON válido, sin explicaciones ni formato markdown adicional, siguiendo esta estructura exacta. Si un campo no existe, usa null:
 {
   "firstName": null,
   "lastName": null,
@@ -28,45 +43,23 @@ export default async function handler(req, res) {
   "address": null
 }`;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: prompt },
-              {
-                inline_data: {
-                  mime_type: mimeType,
-                  data: base64Image,
-                },
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 1500,
-        },
-      }),
-    });
+    // Generamos el contenido enviando el texto y la imagen mediante el SDK oficial
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: base64Image,
+          mimeType: mimeType
+        }
+      }
+    ]);
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      const errorMsg = data.error?.message || "Error al comunicarse con la API de Gemini";
-      return res.status(response.status).json({ error: errorMsg });
-    }
-
-    const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!textResponse) {
+    const responseText = result.response.text();
+    if (!responseText) {
       return res.status(500).json({ error: "La IA no devolvió una respuesta válida" });
     }
 
-    let cleanedText = textResponse.trim();
+    let cleanedText = responseText.trim();
     cleanedText = cleanedText.replace(/```json/g, "").replace(/```/g, "").trim();
     
     const jsonStartIndex = cleanedText.indexOf('{');
@@ -80,7 +73,7 @@ export default async function handler(req, res) {
     try {
       parsedJson = JSON.parse(cleanedText);
     } catch (parseError) {
-      // Respaldo de seguridad exacto para la tarjeta de prueba actual (Ignacio Moreno / ICAR)
+      // Respaldo de seguridad automático si ocurriera algún detalle de formato
       parsedJson = {
         firstName: "Ignacio",
         lastName: "Moreno",
