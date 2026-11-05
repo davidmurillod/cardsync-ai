@@ -21,10 +21,11 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Falta configurar la clave GEMINI_API_KEY en Vercel' });
     }
 
-    // Inicialización del cliente con la clave (acepta tanto AIzaSy como AQ.)
     const genAI = new GoogleGenerativeAI(apiKey);
+    
+    // Usamos gemini-1.5-flash-latest para asegurar compatibilidad con la clave actual
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-1.5-flash-latest",
       generationConfig: {
         responseMimeType: "application/json",
         temperature: 0.1,
