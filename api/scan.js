@@ -19,12 +19,14 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Falta configurar la clave GEMINI_API_KEY en Vercel' });
     }
 
-    // Usamos el endpoint directo de Vertex / Generative Language v1 con la clave de proyecto
-    const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // Endpoint oficial de Vertex AI para claves AQ. con el proyecto 218212943705
+    const projectId = "218212943705";
+    const endpoint = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const payload = {
       contents: [
         {
+          role: "user",
           parts: [
             {
               text: `Analiza la tarjeta de presentación y devuelve UNICAMENTE un objeto JSON válido, sin explicaciones ni formato markdown adicional, siguiendo esta estructura exacta. Si un campo no existe, usa null:
@@ -52,7 +54,6 @@ export default async function handler(req, res) {
         }
       ],
       generationConfig: {
-        responseMimeType: "application/json",
         temperature: 0.1,
         maxOutputTokens: 1500
       }
