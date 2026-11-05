@@ -12,16 +12,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Falta la imagen o el tipo MIME' });
     }
 
-    // Limpiar el prefijo data URL si el navegador lo incluyó
     if (base64Image.includes('base64,')) {
       base64Image = base64Image.split('base64,')[1];
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = (process.env.GEMINI_API_KEY || '').trim();
     if (!apiKey) {
       return res.status(500).json({ error: 'Falta configurar la clave GEMINI_API_KEY en Vercel' });
     }
 
+    // Inicialización del cliente con la clave (acepta tanto AIzaSy como AQ.)
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ 
       model: "gemini-1.5-flash",
@@ -77,7 +77,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error("Error detallado en /api/scan:", error);
-    // Devolvemos el error técnico exacto para verlo en la interfaz
     return res.status(500).json({ error: "Error técnico: " + (error.message || error.toString()) });
   }
 }
