@@ -19,8 +19,9 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Falta configurar la clave GEMINI_API_KEY en Vercel' });
     }
 
-    // Endpoint estándar de Google AI Studio (sin restricciones de IAM de proyecto)
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // Usamos el ID numérico del proyecto al que pertenece la clave AQ.
+    const projectId = "218212943705";
+    const endpoint = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const payload = {
       contents: [
