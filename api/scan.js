@@ -19,8 +19,8 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Falta configurar la clave GEMINI_API_KEY en Vercel' });
     }
 
-    // Usamos el ID numérico del proyecto al que pertenece la clave AQ.
-    const projectId = "218212943705";
+    // ID de proyecto exacto vinculado a la facturación
+    const projectId = "gen-lang-client-0280874052";
     const endpoint = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const payload = {
