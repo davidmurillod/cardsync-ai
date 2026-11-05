@@ -19,8 +19,8 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Falta configurar la clave GEMINI_API_KEY en Vercel' });
     }
 
-    // Endpoint oficial de Vertex AI para claves AQ. con el proyecto 218212943705
-    const projectId = "218212943705";
+    // Endpoint de Vertex AI actualizado con el proyecto cardsyncv2
+    const projectId = "cardsyncv2";
     const endpoint = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const payload = {
