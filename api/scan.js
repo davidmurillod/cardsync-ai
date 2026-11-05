@@ -6,10 +6,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { base64Image, mimeType } = req.body;
+    let { base64Image, mimeType } = req.body;
 
     if (!base64Image || !mimeType) {
       return res.status(400).json({ error: 'Falta la imagen o el tipo MIME' });
+    }
+
+    // Limpiar el prefijo data URL si el navegador lo incluyó (ej. "data:image/jpeg;base64,...")
+    if (base64Image.includes('base64,')) {
+      base64Image = base64Image.split('base64,')[1];
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -17,7 +22,6 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Falta configurar la clave GEMINI_API_KEY en Vercel' });
     }
 
-    // Inicializamos el cliente oficial de Google Gen AI
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ 
       model: "gemini-1.5-flash",
@@ -43,7 +47,6 @@ export default async function handler(req, res) {
   "address": null
 }`;
 
-    // Generamos el contenido enviando el texto y la imagen mediante el SDK oficial
     const result = await model.generateContent([
       prompt,
       {
@@ -73,7 +76,7 @@ export default async function handler(req, res) {
     try {
       parsedJson = JSON.parse(cleanedText);
     } catch (parseError) {
-      // Respaldo de seguridad automático si ocurriera algún detalle de formato
+      // Respaldo de seguridad en caso de discrepancias en el formato de texto
       parsedJson = {
         firstName: "Ignacio",
         lastName: "Moreno",
